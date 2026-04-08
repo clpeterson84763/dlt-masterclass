@@ -1,5 +1,7 @@
 import bcrypt from 'bcryptjs';
-import { createUser as dbCreateUser, getUserByEmail, markUserAsPaid, initDb } from './db';
+
+// Simple in-memory store
+const users: any[] = [];
 
 export async function hashPassword(password: string): Promise<string> {
   return bcrypt.hash(password, 12);
@@ -10,14 +12,21 @@ export async function verifyPassword(password: string, hash: string): Promise<bo
 }
 
 export async function createUser(email: string, hashedPassword: string) {
-  const user = await dbCreateUser(email, hashedPassword);
-  return { id: user.id, email: user.email, isPaid: user.isPaid };
+  const user = {
+    id: users.length + 1,
+    email,
+    password: hashedPassword,
+    isPaid: false,
+  };
+  users.push(user);
+  return user;
 }
 
-export async function getUserByEmailAuth(email: string) {
-  return await getUserByEmail(email);
+export async function getUserByEmail(email: string) {
+  return users.find(u => u.email === email) || null;
 }
 
-export async function markUserAsPaidAuth(email: string) {
-  await markUserAsPaid(email);
+export async function markUserAsPaid(email: string) {
+  const user = users.find(u => u.email === email);
+  if (user) user.isPaid = true;
 }
