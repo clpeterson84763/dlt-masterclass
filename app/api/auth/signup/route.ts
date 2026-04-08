@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { hashPassword, createUser, getUserByEmailAuth } from '@/lib/auth';
+import { hashPassword, createUser, getUserByEmail } from '@/lib/auth';
 
 export async function POST(request: NextRequest) {
   try {
@@ -9,7 +9,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Email and password required' }, { status: 400 });
     }
 
-    const existing = await getUserByEmailAuth(email);
+    const existing = await getUserByEmail(email);
     if (existing) {
       return NextResponse.json({ error: 'User already exists' }, { status: 409 });
     }
