@@ -1,21 +1,22 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { hashPassword, createUser, getUserByEmail } from '@/lib/auth';
+import { hashPassword, createUser, getUserByEmailAuth } from '@/lib/auth';
 
 export async function POST(request: NextRequest) {
   try {
     const { email, password } = await request.json();
-    if (!email || !password) {
-      return NextResponse.json({ error: 'Email and password are required' }, { status: 400 });
-    }
     
-    const existingUser = await getUserByEmail(email);
-    if (existingUser) {
+    if (!email || !password) {
+      return NextResponse.json({ error: 'Email and password required' }, { status: 400 });
+    }
+
+    const existing = await getUserByEmailAuth(email);
+    if (existing) {
       return NextResponse.json({ error: 'User already exists' }, { status: 409 });
     }
-    
+
     const hashedPassword = await hashPassword(password);
     const user = await createUser(email, hashedPassword);
-    
+
     const userData = { id: user.id, email: user.email, isPaid: user.isPaid };
     const response = NextResponse.json({ success: true, user: userData });
     response.cookies.set('user', JSON.stringify(userData), {
@@ -26,7 +27,7 @@ export async function POST(request: NextRequest) {
     });
     return response;
   } catch (error) {
-    console.error('Signup error:', error);
+    console.error('Error:', error);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }
