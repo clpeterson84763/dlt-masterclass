@@ -1,26 +1,34 @@
-import Database from 'better-sqlite3';
-import path from 'path';
 
-let db: Database.Database | null = null;
+import { Pool } from 'pg';
 
-export function getDb(): Database.Database {
-  if (!db) {
-    const dbPath = path.join(process.cwd(), 'dev.db');
-    db = new Database(dbPath);
-    db.pragma('journal_mode = WAL');
-  }
-  return db;
+const pool = new Pool({
+  connectionString: process.env.DATABASE_URL,
+});
+
+export async function initDb(): Promise<void> {
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS users (
+      id SERIAL PRIMARY KEY,
+      email VARCHAR(255) UNIQUE NOT NULL,
+      password VARCHAR(255) NOT NULL,
+      isPaid BOOLEAN DEFAULT false,
+      createdAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    );
+    
+    CREATE INDEX IF NOT EXISTS idx_users_email ON users(email);
+  `);
 }
 
-export function initDb(): void {
-  const database = getDb();
-  database.exec(`
-    CREATE TABLE IF NOT EXISTS users (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
-      email TEXT UNIQUE NOT NULL,
-      password TEXT NOT NULL,
-      hasPaid INTEGER DEFAULT 0,
-      createdAt TEXT DEFAULT (datetime('now'))
-    )
-  `);
+export async function query(text: string, params: any[] = []) {
+  const result = await pool.query(text, params);
+  return result.rows;
+}
+
+export async function queryOne(text: string, params: any[] = []) {
+  const result = await pool.query(text, params);
+  return result.rows[0];
+}
+
+export async function execute(text: string, params: any[] = []) {
+  await pool.query(text, params);
 }
